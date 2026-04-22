@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>SIM_PRO_DICKY</title>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js"></script>
+
+  <style>
+    body { margin:0; font-family: Arial; }
+
+    #header{
+      position:absolute;
+      z-index:999;
+      width:100%;
+      background:#0b1f14;
+      color:white;
+      text-align:center;
+      padding:10px;
+      font-weight:bold;
+    }
+
+    #map{ height:100vh; }
+
+    #panel{
+      position:absolute;
+      right:10px;
+      top:80px;
+      width:240px;
+      background:white;
+      padding:10px;
+      z-index:999;
+      border-radius:10px;
+      box-shadow:0 0 10px rgba(0,0,0,0.3);
+      font-size:13px;
+    }
+
+    #dcLogo{
+      position:absolute;
+      z-index:1000;
+      top:100px;
+      left:10px;
+      width:45px;
+      height:45px;
+      background:#1f6f3f;
+      color:white;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      border-radius:50%;
+      font-weight:bold;
+      box-shadow:0 0 8px rgba(0,0,0,0.4);
+    }
+
+    /* label blok */
+    .block-label{
+      color:white;
+      font-weight:bold;
+      font-size:13px;
+      text-shadow:0 0 4px black;
+    }
+  </style>
+</head>
+
+<body>
+
+<div id="header">
+🌴 SIM_PRO_DICKY | WEBGIS ESTATE SAWIT 🌴
+</div>
+
+<div id="dcLogo">DC</div>
+
+<div id="panel">
+<b>📊 INFO BLOK</b><hr>
+Klik blok di peta
+</div>
+
+<div id="map"></div>
+
+<script>
+
+// =========================
+// MAP RIAU ESTATE
+// =========================
+var map = L.map('map').setView([0.6500, 101.9000], 16);
+
+// =========================
+// BASE MAP
+// =========================
+var sat = L.tileLayer(
+  'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+  { attribution:'Satellite' }
+).addTo(map);
+
+var osm = L.tileLayer(
+  'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+  { attribution:'OSM' }
+);
+
+L.control.layers({
+  "🌍 Satellite": sat,
+  "🗺️ OSM": osm
+}).addTo(map);
+
+// =========================
+// PANEL
+// =========================
+function updatePanel(name, luas){
+  document.getElementById("panel").innerHTML =
+  "<b>📊 INFO BLOK</b><hr>" +
+  "🌴 " + name + "<br>" +
+  "📏 Luas: " + luas + " Ha";
+}
+
+// =========================
+// LUAS
+// =========================
+function getArea(layer){
+  return (turf.area(layer.toGeoJSON()) / 10000).toFixed(2);
+}
+
+// =========================
+// LOKASI SAWIT RIAU
+// =========================
+let baseLat = 0.6500;
+let baseLng = 101.9000;
+
+let step = 0.0030;
+
+// =========================
+// UKURAN BLOK (SEDIKIT VARIASI SAJA)
+// =========================
+let sizeList = [
+  0.00215, 0.00205, 0.00220, 0.00200, 0.00225,
+  0.00210, 0.00218, 0.00208, 0.00195, 0.00212,
+  0.00200, 0.00206, 0.00198, 0.00222, 0.00205
+];
+
+// =========================
+// WARNA TEBAL (NO TRANSPARAN LOOK)
+// =========================
+let colors = [
+  "#0b6623","#145a32","#2e7d32","#1b5e20","#ff8c00",
+  "#c62828","#6a1b9a","#1565c0","#00838f","#5d4037",
+  "#ad1457","#f9a825","#00695c","#2e7d32","#1b5e20"
+];
+
+// =========================
+// BLOK SAWIT
+// =========================
+function addBlock(name, i, j, size, color){
+
+  let lat = baseLat + (i * step);
+  let lng = baseLng + (j * step);
+
+  let poly = L.polygon([
+    [lat + size, lng - size],
+    [lat + size, lng + size],
+    [lat - size, lng + size],
+    [lat - size, lng - size]
+  ], {
+    color:"#ffffff",
+    weight:1.5,
+    fillColor:color,
+    fillOpacity:0.98
+  }).addTo(map);
+
+  // label tengah
+  poly.bindTooltip(name, {
+    permanent:true,
+    direction:"center",
+    className:"block-label"
+  }).openTooltip();
+
+  poly.on("click", function(){
+
+    let luas = getArea(this);
+
+    this.bindPopup(
+      "<b>🌴 " + name + "</b><br>📏 Luas: " + luas + " Ha"
+    ).openPopup();
+
+    updatePanel(name, luas);
+
+  });
+
+}
+
+// =========================
+// GENERATE 15 BLOK
+// =========================
+let index = 0;
+
+for(let i=0;i<3;i++){
+  for(let j=0;j<5;j++){
+
+    addBlock(
+      "B" + (index+1),
+      i,
+      j,
+      sizeList[index],
+      colors[index]
+    );
+
+    index++;
+  }
+}
+
+</script>
+
+</body>
+</html>
